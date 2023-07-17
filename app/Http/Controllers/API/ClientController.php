@@ -7,6 +7,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
+use App\Models\admin;
+use App\Models\manager;
+use App\Models\like;
+use App\Models\comment;
+use App\Models\Blogsite;
+
 
 class ClientController extends Controller
 {
@@ -104,4 +110,48 @@ class ClientController extends Controller
         return response()->json(['message'=>'profile updated succesfully']);
 
     }
+// show blog
+    public function show_blog(){
+        $blogs = Blogsite::all();
+        return response()->json(['blog'=>$blogs]);
+    }
+
+
+        public function add_like($id){
+        $post = Blogsite::find($id);
+        $like = new like;
+        $post->like_count += 1;
+        $like->post_id = $id;
+        $like->user_id = Auth::user()->id;
+        $like->user_type = "client";
+        $post->save();
+        $like->save();
+        return response()->json(['message'=>'liked successfully']);
+    }
+    public function blog_details($id){
+        $post = Blogsite::find($id);
+        $post->viewer += 1;
+        $post->save();
+        $comments = comment::where('post_id',$id)->get();
+        if($post->user_type == 'admin'){
+            $created_by = admin::find($post->author_id);
+        }
+        if($post->user_type == 'manager'){
+            $created_by = manager::find($post->author_id);
+        }
+        return response()->json(['blog'=>$post, 'created_by' => $created_by , 'comments' => $comments]);
+    }
+       public function add_Comment(Request $request, $id){
+         $post = Blogsite::find($id);
+         $comment = new comment();
+         $post->comment_count +=1 ;
+         $comment->post_id = $id;
+         $comment->user_id = Auth::user()->id;
+         $comment->user_type = "client";
+         $comment->content = $request->input('content');
+         $comment->save();
+         $post->save();
+        return response()->json(['message'=>'commented successfully']);
+       }
+
 }
